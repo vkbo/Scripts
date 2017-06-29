@@ -11,7 +11,7 @@
 #  Usage:   ./7zBackup.sh [Source] [RunDiff]
 #  Example: ./7zBackup.sh Sync/Primary true
 #
-#  [Source]  :  What folder to back up. Is appended to ROOT path in settings.
+#  [Source]  : What folder to back up. This is appended to ROOT path in settings.
 #              The last part of the source path is used as the backup job name.
 #  [RunDiff] : To run a differential backup, use DIFF. Otherwise a full backup
 #              will run. Also, if there is no full backup found to diff against
