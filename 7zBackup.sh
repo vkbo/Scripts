@@ -76,7 +76,7 @@ else
 fi
 
 if [ -e $TARC.7z ]; then
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Archive already exists $TARC"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Archive already exists $TARC.7z"
     exit 0
 fi
 
