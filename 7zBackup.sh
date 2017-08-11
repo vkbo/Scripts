@@ -8,14 +8,17 @@
 #  License: GPLv3
 #  Website: http://vkbo.net
 #
-#  Usage:   ./7zBackup.sh [Source] [RunDiff]
-#  Example: ./7zBackup.sh Sync/Primary true
+#  Usage:   ./7zBackup.sh [Source] [RunDiff] [Threshold]
+#  Example: ./7zBackup.sh Sync/Primary DIFF 30
 #
-#  [Source]  : What folder to back up. This is appended to ROOT path in settings.
-#              The last part of the source path is used as the backup job name.
-#  [RunDiff] : To run a differential backup, use DIFF. Otherwise a full backup
-#              will run. Also, if there is no full backup found to diff against
-#              a full backup is run.
+#  [Source]    : What folder to back up. This is appended to ROOT path in settings.
+#                The last part of the source path is used as the backup job name.
+#  [RunDiff]   : To run a differential backup, use DIFF. Otherwise a full backup
+#                will run. Also, if there is no full backup found to diff against
+#                a full backup is run.
+#  [Threshold] : If the previous diff is more than or equal to this amount of percent
+#                as large as last full backup, run a new full backup instead. This
+#                Setting can be omitted as it defaults to 101.
 #
 #  Intended Usage:
 #
@@ -50,8 +53,15 @@ else
     DIFF=false
 fi
 
+if [ ! -z $3 ]; then
+    THRS=$3
+else
+    THRS=101
+fi
+
 TYPE=$(basename $SDIR)
-LAST=$BDIR/$TYPE.diff
+LAST=$BDIR/$TYPE.full
+SIZE=$BDIR/$TYPE.size
 ODIR=$BDIR/$(date +%Y-%m)
 CURR=$(date +%Y-%m-%d)
 
@@ -61,8 +71,17 @@ if [ ! -d $ODIR ]; then
 fi
 
 if [ $DIFF = true ]; then
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Differentual backup of $SDIR has been requested"
-    if [ -e $LAST ]; then
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Differential backup of $SDIR has been requested"
+    if [ -e $SIZE ]; then
+        PREV=$(cat $SIZE)
+    else
+        PREV=0
+    fi
+    if [ "$PREV" -ge "$THRS" ]; then
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Previous diff was $PREV% of full, and threshold is $THRS%: Running full"
+        DIFF=false
+        TARC=$ODIR/$CURR.$TYPE.Full
+    elif [ -e $LAST ]; then
         DATE=$(cat $LAST)
         SARC=$BDIR/${DATE:0:7}/${DATE:0:10}.$TYPE.Full
         TARC=$ODIR/$CURR.$TYPE.Diff
@@ -83,6 +102,11 @@ fi
 if [ $DIFF = true ]; then
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting differential backup of $SDIR"
     7z u -bd -p$ZPWD -mhe=on -xr!.stfolder $SARC.7z $SDIR -t7z -u- -up0q3r2x2y2z0w2!$TARC.7z >> $TARC.log 2>&1
+    SSIZE=$(stat -c%s $SARC.7z)
+    TSIZE=$(stat -c%s $TARC.7z)
+    if [ "$SSIZE" -gt 0 ]; then
+        echo $((100*TSIZE / SSIZE)) > $SIZE
+    fi
 else
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting full backup of $SDIR"
     7z u -bd -p$ZPWD -mhe=on -xr!.stfolder $TARC.7z $SDIR >> $TARC.log 2>&1
