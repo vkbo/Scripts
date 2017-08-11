@@ -35,8 +35,8 @@ from datetime import datetime
 getCrypto   = ["BTC","XMR"]
 
 # What currencies (rows) to list against (columns) in the final table
-listFinal   = ["CHF","DKK","EUR","GBP","NOK","SEK","USD","BTC","XMR"]
-listAgainst = ["CHF","EUR","NOK","BTC","XMR"]
+listFinal   = ["CHF","DKK","EUR","GBP","NOK","SEK","THB","USD"]
+listAgainst = ["CHF","EUR","NOK","GBP","USD","BTC","XMR"]
 listHLCol   = ""
 listHLRow   = "NOK"
 
