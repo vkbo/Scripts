@@ -106,11 +106,14 @@ if [ $DIFF = true ]; then
     TSIZE=$(stat -c%s $TARC.7z)
     if [ "$SSIZE" -gt 0 ]; then
         echo $((100*TSIZE / SSIZE)) > $SIZE
+    else
+        echo "0" > $SIZE
     fi
 else
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting full backup of $SDIR"
     7z u -bd -p$ZPWD -mhe=on -xr!.stfolder $TARC.7z $SDIR >> $TARC.log 2>&1
     echo $CURR > $LAST
+    echo "0" > $SIZE
 fi
 
 7z l  -p$ZPWD $TARC.7z > $TARC.list
