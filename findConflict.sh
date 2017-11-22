@@ -1,7 +1,7 @@
 #!/bin/bash
 
-if [ "$1" == "-r" ]; then
-    find . -name '*sync-conflict*' -exec rm -fv {} \;
+if [ "$2" == "-r" ]; then
+    find "$1" -name '*sync-conflict*' -exec rm -fv {} \;
 else
-    find . -name '*sync-conflict*'
+    find "$1" -name '*sync-conflict*'
 fi
