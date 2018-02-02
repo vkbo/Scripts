@@ -37,11 +37,11 @@ else
     echo ""
 
     # Fix Dependencies
-    apt -f install
+    apt -fy install
     echo ""
     echo "****************************************************************************************************"
     echo ""
-    
+
     rm -v google-chrome-stable_current_amd64.deb
     rm -v code_latest_amd64.deb
 
@@ -73,16 +73,23 @@ apt install -y \
     gnome-shell-extension-system-monitor \
     gnome-shell-extension-weather \
     g++ \
+    inetutils-tools \
     inkscape \
     ipython \
     ipython3 \
     keepass2 \
     libboost-all-dev \
+    libhdf5-dev \
+    libhdf5-openmpi-dev \
     libopenmpi-dev \
     libreoffice-style-breeze \
     libssl-dev \
     lm-sensors \
+    locate \
     meld \
+    mutt \
+    nodejs \
+    par2 \
     pkg-config \
     python3 \
     python3-gi \
@@ -93,17 +100,23 @@ apt install -y \
     p7zip \
     rar \
     rsync \
+    screen \
     secure-delete \
     smartmontools \
     system-config-printer \
     terminator \
     texlive-full \
+    thunar \
     thunderbird \
     thunderbird-l10n-nb-no \
     typecatcher \
     unrar \
     vlc \
     zim
+
+apt purge -y \
+    cups-browsed
+
 echo ""
 echo "****************************************************************************************************"
 echo ""
@@ -117,7 +130,7 @@ if [ ! -f /etc/apt/sources.list.d/syncthing.list ]; then
     curl -s https://syncthing.net/release-key.txt | sudo apt-key add -
     echo "deb https://apt.syncthing.net/ syncthing stable" | tee /etc/apt/sources.list.d/syncthing.list
     apt update
-    apt install syncthing
+    apt install -y syncthing
     apt -f install
     systemctl enable syncthing@vkbo.service
     systemctl start syncthing@vkbo.service
@@ -135,8 +148,21 @@ if [ ! -f /etc/apt/sources.list.d/spotify.list ]; then
     apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 0DF731E45CE24F27EEEB1450EFDC8610341D9410
     echo deb http://repository.spotify.com stable non-free | tee /etc/apt/sources.list.d/spotify.list
     apt update
-    apt install spotify-client
+    apt install -y spotify-client
     apt -f install
+    echo "****************************************************************************************************"
+    echo ""
+fi
+
+# NodeJS
+if [ ! -f /etc/apt/sources.list.d/nodesource.list ]; then
+    echo ""
+    echo "Installing NodeJS ..."
+    echo "****************************************************************************************************"
+    echo ""
+    curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
+    apt update
+    apt install -y nodejs
     echo "****************************************************************************************************"
     echo ""
 fi
