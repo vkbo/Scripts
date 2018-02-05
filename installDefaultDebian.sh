@@ -88,6 +88,7 @@ apt install -y \
     locate \
     meld \
     mutt \
+    net-tools \
     nodejs \
     par2 \
     pkg-config \
