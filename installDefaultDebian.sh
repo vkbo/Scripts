@@ -90,12 +90,14 @@ apt install -y \
     mutt \
     net-tools \
     nodejs \
+    pandoc \
     par2 \
     pkg-config \
     python3 \
     python3-gi \
     python3-matplotlib \
     python3-numpy \
+    python3-pytest \
     python-matplotlib \
     python-numpy \
     p7zip \
