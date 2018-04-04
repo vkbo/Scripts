@@ -46,7 +46,6 @@ BOLD      = "\033[0;1m"
 UNDERLINE = "\033[0;4m"
 END       = "\033[0;0m"
 
-
 if len(sys.argv) < 2:
     print("Error: No currency pair specified")
     exit(1)
@@ -66,8 +65,12 @@ for theCoin in theCoins:
     openPrice = float(apiJSON["openPrice"])
     change24h = 100*(lastPrice-openPrice)/openPrice
     
-    if theSymbol[-3:] == "BTC":
+    if   theSymbol[-3:] == "BTC":
         fmtNum = "%10.8f"
+    elif theSymbol[-3:] == "ETH":
+        fmtNum = "%10.7f"
+    elif theSymbol[-3:] == "BNB":
+        fmtNum = "%10.6f"
     elif theSymbol[-4:] == "USDT":
         fmtNum = "%10.4f"
     else:
