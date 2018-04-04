@@ -58,6 +58,7 @@ apt install -y \
     apt-transport-https \
     automake \
     autotools-dev \
+    bless \
     build-essential \
     calibre \
     cmake \
