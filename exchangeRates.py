@@ -4,7 +4,7 @@
 # ==============================================
 #  Author:  Veronica Berglyd Olsen
 #  Date:    14.06.2017
-#  URL:     https://github.com/Jadzia626/Scripts
+#  URL:     https://github.com/vkbo/Scripts
 #  License: GPLv3
 #  Website: http://vkbo.net
 #

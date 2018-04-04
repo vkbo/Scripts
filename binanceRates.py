@@ -4,7 +4,7 @@
 # ==================================================
 #  Author:  Veronica Berglyd Olsen
 #  Date:    04.04.2018
-#  URL:     https://github.com/Jadzia626/Scripts
+#  URL:     https://github.com/vkbo/Scripts
 #
 
 import json, sys
