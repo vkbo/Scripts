@@ -59,14 +59,23 @@ for theCoin in theCoins:
     apiCall = "http://api.binance.com/api/v1/ticker/24hr?symbol=%s" % theCoin
     apiJSON = getJSON(apiCall)
     
+    theSymbol = apiJSON["symbol"]
     lastPrice = float(apiJSON["lastPrice"])
     lowPrice  = float(apiJSON["lowPrice"])
     highPrice = float(apiJSON["highPrice"])
-    change24h = 100*(lastPrice-lowPrice)/lowPrice
+    openPrice = float(apiJSON["openPrice"])
+    change24h = 100*(lastPrice-openPrice)/openPrice
     
-    toPrint  = (BOLD+"%-8s: "+END) % apiJSON["symbol"]
-    toPrint += (CYAN+"%14.8f "+END) % lastPrice
-    toPrint += (YELLOW+"(%14.8f - %14.8f) "+END) % (lowPrice,highPrice)
+    if theSymbol[-3:] == "BTC":
+        fmtNum = "%10.8f"
+    elif theSymbol[-4:] == "USDT":
+        fmtNum = "%10.4f"
+    else:
+        fmtNum = "%10.6f"
+    
+    toPrint  = (BOLD+"%-8s: "+END) % theSymbol
+    toPrint += (CYAN+fmtNum+" "+END) % lastPrice
+    toPrint += (YELLOW+"(L:"+fmtNum+" H:"+fmtNum+") "+END) % (lowPrice,highPrice)
     if change24h > 0:
         toPrint += (GREEN+"%7.2f%%"+END) % change24h
     else:
