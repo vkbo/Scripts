@@ -78,7 +78,7 @@ for theCoin in theCoins:
     
     toPrint  = (BOLD+"%-8s: "+END) % theSymbol
     toPrint += (CYAN+fmtNum+" "+END) % lastPrice
-    toPrint += (YELLOW+"(L:"+fmtNum+" H:"+fmtNum+") "+END) % (lowPrice,highPrice)
+    toPrint += (YELLOW+"(L:"+fmtNum+" H:"+fmtNum+" O:"+fmtNum+") "+END) % (lowPrice,highPrice,openPrice)
     if change24h > 0:
         toPrint += (GREEN+"%7.2f%%"+END) % change24h
     else:
