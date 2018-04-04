@@ -10,20 +10,6 @@
 import json, sys
 
 from urllib.request import Request, urlopen
-from time import mktime
-from datetime import datetime
-
-#  Settings
-# ==========
-
-# Which crypto currencies to look up
-getCrypto   = ["BTC","XMR"]
-
-# What currencies (rows) to list against (columns) in the final table
-listFinal   = ["CHF","DKK","EUR","GBP","NOK","SEK","USD","XMR"]
-listAgainst = ["CHF","EUR","NOK","GBP","USD","BTC","XMR"]
-listHLCol   = ""
-listHLRow   = "NOK"
 
 # Make JSON API Call
 def getJSON(apiCall):
