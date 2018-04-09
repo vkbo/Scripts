@@ -7,12 +7,15 @@
 #  URL:     https://github.com/vkbo/Scripts
 #
 
-import json, sys, os
+import json, sys, os, signal
 import numpy        as np
 
 from urllib.request import Request, urlopen
 from time           import time, sleep
 from datetime       import datetime
+
+# Settings
+maxHist = 500
 
 # Make JSON API Call
 def getJSON(apiCall):
@@ -22,8 +25,11 @@ def getJSON(apiCall):
     urlData = urlopen(urlReq)
     return json.loads(urlData.read().decode())
 
-# Settings
-maxHist   = 24
+def signalHandler(signal, frame):
+    print("\n\nCtrl+C pressed. Exiting ...")
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, signalHandler)
 
 # Linux Terminal Colours
 RED       = "\033[0;31m"
@@ -40,13 +46,23 @@ if len(sys.argv) < 3:
     print("Error: No currency pair specified")
     exit(1)
 else:
-    theWait  = float(sys.argv[1])
+    inTemp   = sys.argv[1]
     theCoins = sys.argv[2:]
+    inSplit  = inTemp.split("/")
+    theWait  = float(inSplit[0])
+    if len(inSplit) > 1:
+        theTrend = float(inSplit[1])
+    else:
+        theTrend = theWait*24
 
 theHist = {}
+theTime = {}
 for theCoin in theCoins:
     if not theCoin == "":
         theHist[theCoin] = []
+        theTime[theCoin] = []
+
+tSpan = 0
 
 while True:
     
@@ -70,15 +86,21 @@ while True:
         openPrice = float(apiJSON["openPrice"])
         change24h = 100*(lastPrice-openPrice)/openPrice
         
+        timeNow   = time()
         theHist[theCoin].append(lastPrice)
+        theTime[theCoin].append(timeNow)
         
         nHist = len(theHist[theCoin])
         yFit  = (0,0)
         if nHist > 1:
-            xData = np.linspace(0,theWait*(nHist-1),nHist)
-            yFit = np.polyfit(xData,theHist[theCoin],1)
+            xTimes = [i for i in theTime[theCoin] if i >= timeNow-theTrend]
+            nTimes = len(xTimes)
+            xData  = np.linspace(0,theWait*(nTimes-1),nTimes)
+            yFit   = np.polyfit(xData,theHist[theCoin][-nTimes:],1)
+            tSpan  = timeNow-xTimes[0]
         if nHist > maxHist:
             theHist[theCoin].pop(0)
+            theTime[theCoin].pop(0)
         
         if   theSymbol[-3:] == "BTC":
             fmtNum = "%10.8f"
@@ -103,7 +125,7 @@ while True:
         toPrint += "\n"
     
     toPrint += "\n"
-    toPrint += "Trend calculated over %.2f seconds. " % (theWait*len(theHist[theCoin]))
+    toPrint += "Trend calculated over %.2f seconds. " % tSpan
     
     os.system("clear")
     print(toPrint)
