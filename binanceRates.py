@@ -51,7 +51,7 @@ else:
     inSplit  = inTemp.split("/")
     theWait  = float(inSplit[0])
     if len(inSplit) > 1:
-        theTrend = float(inSplit[1])
+        theTrend = float(inSplit[1])+0.49*theWait
     else:
         theTrend = theWait*24
 
