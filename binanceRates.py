@@ -55,6 +55,9 @@ else:
     else:
         theTrend = theWait*24
 
+if theTrend/theWait > maxHist:
+    maxHist = round(theTrend/theWait)+10
+
 theHist = {}
 theTime = {}
 for theCoin in theCoins:
@@ -63,11 +66,12 @@ for theCoin in theCoins:
         theTime[theCoin] = []
 
 tSpan = 0
+wLen  = 84
 
 while True:
     
     toPrint  = "Every %.1f seconds:" % theWait
-    toPrint += " "*(65-len(toPrint))
+    toPrint += " "*(wLen-len(toPrint)-19)
     toPrint += datetime.fromtimestamp(time()).strftime('%Y-%m-%d %H:%M:%S')+"\n"
     toPrint += "\n"
     
@@ -125,9 +129,23 @@ while True:
         toPrint += "\n"
     
     toPrint += "\n"
-    toPrint += "Trend calculated over %.2f seconds. " % tSpan
+    prTrend  = "Trend calculated over %.2f seconds" % tSpan
+    
+    if nHist > 1:
+        avgTime  = (theTime[theCoin][-1]-theTime[theCoin][0])/(nHist-1)
+        avgDelay = avgTime-theWait
+        toWait   = theWait-avgDelay
+        prDelay  = "Avg. Time: %.1f ms" % (avgDelay*1000)
+        if toWait < 0:
+            toWait = 0.5
+    else:
+        prDelay = ""
+        toWait  = theWait
+    
+    toPrint += prTrend+(" "*(wLen-len(prTrend)-len(prDelay)))+prDelay
     
     os.system("clear")
     print(toPrint)
-    sleep(theWait)
+    
+    sleep(toWait)
         
