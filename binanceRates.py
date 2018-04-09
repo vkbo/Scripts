@@ -100,7 +100,7 @@ while True:
             xTimes = [i for i in theTime[theCoin] if i >= timeNow-theTrend]
             nTimes = len(xTimes)
             xData  = np.linspace(0,theWait*(nTimes-1),nTimes)
-            yFit   = np.polyfit(xData,theHist[theCoin][-nTimes:],1)
+            yFit   = np.polyfit(theTime[theCoin][-nTimes:],theHist[theCoin][-nTimes:],1)
             tSpan  = timeNow-xTimes[0]
         if nHist > maxHist:
             theHist[theCoin].pop(0)
@@ -131,21 +131,22 @@ while True:
     toPrint += "\n"
     prTrend  = "Trend calculated over %.2f seconds" % tSpan
     
+    # Calculate sleep time
     if nHist > 1:
-        avgTime  = (theTime[theCoin][-1]-theTime[theCoin][0])/(nHist-1)
-        avgDelay = avgTime-theWait
-        toWait   = theWait-avgDelay
-        prDelay  = "Avg. Time: %.1f ms" % (avgDelay*1000)
+        actTime  = theTime[theCoin][-1]-theTime[theCoin][0]
+        wantTime = theWait*(nHist-1)
+        diffTime = wantTime-actTime
+        toWait   = theWait+diffTime
         if toWait < 0:
             toWait = 0.5
+        prTime   = "Avg. Time: %.2f seconds" % (actTime/(nHist-1))
     else:
-        prDelay = ""
-        toWait  = theWait
+        prTime = ""
+        toWait = theWait
     
-    toPrint += prTrend+(" "*(wLen-len(prTrend)-len(prDelay)))+prDelay
+    toPrint += prTrend+(" "*(wLen-len(prTrend)-len(prTime)))+prTime
     
     os.system("clear")
     print(toPrint)
-    
     sleep(toWait)
         
