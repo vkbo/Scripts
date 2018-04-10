@@ -25,10 +25,24 @@ def getJSON(apiCall):
     urlData = urlopen(urlReq)
     return json.loads(urlData.read().decode())
 
-def signalHandler(signal, frame):
-    print("\n\nCtrl+C pressed. Exiting ...")
+def signalHandler(theSignal, theFrame):
+    print("\nExiting ...")
     sys.exit(0)
 
+def stringToSeconds(timeString):
+    if len(timeString) >= 2:
+        if   timeString[-1] == "s":
+            return float(timeString[:-1])
+        elif timeString[-1] == "m":
+            return float(timeString[:-1])*60
+        elif timeString[-1] == "h":
+            return float(timeString[:-1])*3600
+    print("Error: Could not parse time string '%s'" % timeString)
+    print("       Format is 00s, 00m or 00h")
+    sys.exit(0)
+    return
+
+# Capture ctrl+c
 signal.signal(signal.SIGINT, signalHandler)
 
 # Linux Terminal Colours
@@ -42,16 +56,27 @@ BOLD      = "\033[0;1m"
 UNDERLINE = "\033[0;4m"
 END       = "\033[0;0m"
 
+# Get initial info
+okPairs = {}
+apiCall = "https://api.binance.com/api/v1/exchangeInfo"
+apiJSON = getJSON(apiCall)
+for exPair in apiJSON["symbols"]:
+    okPairs[exPair["symbol"]] = exPair["quoteAsset"]
+
 if len(sys.argv) < 3:
     print("Error: No currency pair specified")
-    exit(1)
+    print("Usage: %s [interval]/[trend] PAIR1 PAIR2 ..." % os.path.basename(sys.argv[0]))
+    print("Where: [interval] is the refresh time in units of s, m or h. E.g. 10s")
+    print("       [trend]    is optionally the time to calculate hourly trends over, in units of s, m or h.")
+    print("       PAIR1...n  are the exchange pairs. See Binance exchange for valid pairs.")
+    sys.exit(1)
 else:
     inTemp   = sys.argv[1]
     theCoins = sys.argv[2:]
     inSplit  = inTemp.split("/")
-    theWait  = float(inSplit[0])
+    theWait  = stringToSeconds(inSplit[0])
     if len(inSplit) > 1:
-        theTrend = float(inSplit[1])+0.49*theWait
+        theTrend = stringToSeconds(inSplit[1])+0.49*theWait
     else:
         theTrend = theWait*24
 
@@ -79,7 +104,10 @@ while True:
         
         if theCoin == "":
             continue
-        
+        if theCoin not in okPairs.keys():
+            print("Error: %s is not a valid Binance trading pair." % theCoin)
+            sys.exit(0)
+
         apiCall = "http://api.binance.com/api/v1/ticker/24hr?symbol=%s" % theCoin
         apiJSON = getJSON(apiCall)
         
@@ -106,13 +134,13 @@ while True:
             theHist[theCoin].pop(0)
             theTime[theCoin].pop(0)
         
-        if   theSymbol[-3:] == "BTC":
+        if   okPairs[theCoin] == "BTC":
             fmtNum = "%10.8f"
-        elif theSymbol[-3:] == "ETH":
+        elif okPairs[theCoin] == "ETH":
             fmtNum = "%10.7f"
-        elif theSymbol[-3:] == "BNB":
+        elif okPairs[theCoin] == "BNB":
             fmtNum = "%10.6f"
-        elif theSymbol[-4:] == "USDT":
+        elif okPairs[theCoin] == "USDT":
             fmtNum = "%10.4f"
         else:
             fmtNum = "%10.6f"
@@ -146,7 +174,8 @@ while True:
     
     toPrint += prTrend+(" "*(wLen-len(prTrend)-len(prTime)))+prTime
     
-    os.system("clear")
+    print("\033[H\033[J",end="")
+    sys.stdout.flush()
     print(toPrint)
+    sys.stdout.flush()
     sleep(toWait)
-        
