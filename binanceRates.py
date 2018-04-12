@@ -66,29 +66,29 @@ for exPair in apiJSON["symbols"]:
 if len(sys.argv) < 3:
     print("Error: No currency pair specified")
     print("Usage: %s [interval]/[trend] PAIR1 PAIR2 ..." % os.path.basename(sys.argv[0]))
+    print("       %s [interval]/[trend] pairFile.dat"    % os.path.basename(sys.argv[0]))
     print("Where: [interval] is the refresh time in units of s, m or h. E.g. 10s")
     print("       [trend]    is optionally the time to calculate hourly trends over, in units of s, m or h.")
     print("       PAIR1...n  are the exchange pairs. See Binance exchange for valid pairs.")
+    print("       Alternatively, a file of pairs to monitor that will be read every cycle.")
     sys.exit(1)
+
+theFile  = sys.argv[2]
+theCoins = sys.argv[2:]
+useFile  = os.path.isfile(theFile)
+inTemp   = sys.argv[1]
+inSplit  = inTemp.split("/")
+theWait  = stringToSeconds(inSplit[0])
+if len(inSplit) > 1:
+    theTrend = stringToSeconds(inSplit[1])+0.49*theWait
 else:
-    inTemp   = sys.argv[1]
-    theCoins = sys.argv[2:]
-    inSplit  = inTemp.split("/")
-    theWait  = stringToSeconds(inSplit[0])
-    if len(inSplit) > 1:
-        theTrend = stringToSeconds(inSplit[1])+0.49*theWait
-    else:
-        theTrend = theWait*24
+    theTrend = theWait*24
 
 if theTrend/theWait > maxHist:
     maxHist = round(theTrend/theWait)+10
 
 theHist = {}
 theTime = {}
-for theCoin in theCoins:
-    if not theCoin == "":
-        theHist[theCoin] = []
-        theTime[theCoin] = []
 
 tSpan = 0
 wLen  = 84
@@ -100,14 +100,29 @@ while True:
     toPrint += datetime.fromtimestamp(time()).strftime('%Y-%m-%d %H:%M:%S')+"\n"
     toPrint += "\n"
     
+    if useFile:
+        theCoins = []
+        with open(theFile,mode="r") as inFile:
+            for inLine in inFile:
+                inLine = inLine.strip()
+                if len(inLine) < 5:  continue
+                if inLine[0] == "#": continue
+                theCoins.append(inLine)
+    
     for theCoin in theCoins:
         
         if theCoin == "":
             continue
+        
         if theCoin not in okPairs.keys():
-            print("Error: %s is not a valid Binance trading pair." % theCoin)
-            sys.exit(0)
-
+            toPrint += (BOLD+"%-8s: "+END) % theCoin
+            toPrint += RED+"Invalid trading pair"+END+"\n"
+            continue
+        
+        if not theCoin in theHist.keys():
+            theHist[theCoin] = []
+            theTime[theCoin] = []
+        
         apiCall = "http://api.binance.com/api/v1/ticker/24hr?symbol=%s" % theCoin
         apiJSON = getJSON(apiCall)
         
@@ -157,7 +172,7 @@ while True:
         toPrint += "\n"
     
     toPrint += "\n"
-    prTrend  = "Trend calculated over %.2f seconds" % tSpan
+    prTrend  = "Trend calculated over %.2f minutes" % (tSpan/60)
     
     # Calculate sleep time
     if nHist > 1:
