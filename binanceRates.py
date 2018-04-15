@@ -91,7 +91,7 @@ theHist = {}
 theTime = {}
 
 tSpan = 0
-wLen  = 84
+wLen  = 86
 
 while True:
     
@@ -163,11 +163,18 @@ while True:
         toPrint += (BOLD+"%-8s: "+END) % theSymbol
         toPrint += (CYAN+fmtNum+" "+END) % lastPrice
         toPrint += (YELLOW+"(L:"+fmtNum+" H:"+fmtNum+" O:"+fmtNum+") "+END) % (lowPrice,highPrice,openPrice)
-        if change24h > 0:
-            toPrint += (GREEN+"%+7.2f%%"+END) % change24h
+        if change24h < 0:
+            toPrint += (RED+"%+7.2f%%"+END)   % change24h
         else:
-            toPrint += (RED+"%+7.2f%%"+END) % change24h
-        toPrint += " [%+7.2f %%/h]" % (360000*yFit[0]/lastPrice)
+            toPrint += (GREEN+"%+7.2f%%"+END) % change24h
+        
+        hTrend = 360000*yFit[0]/lastPrice
+        if hTrend < 0:
+            toPrint += (RED+"  [T:%+6.2f %%/h]"+END)   % hTrend
+        elif hTrend < 100.0:
+            toPrint += (GREEN+"  [T:%+6.2f %%/h]"+END) % hTrend
+        else:
+            toPrint += (GREEN+"  [T:>99.99%/h]"+END)
         
         toPrint += "\n"
     
