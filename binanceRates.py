@@ -11,6 +11,7 @@ import json, sys, os, signal
 import numpy        as np
 
 from urllib.request import Request, urlopen
+from urllib.error   import HTTPError
 from time           import time, sleep
 from datetime       import datetime
 
@@ -22,8 +23,22 @@ def getJSON(apiCall):
     urlReq = Request(apiCall)
     urlReq.add_header("User-Agent","Mozilla/5.0 (compatible; Python script)")
     urlReq.add_header("Content-Type","application/json")
-    urlData = urlopen(urlReq)
-    return json.loads(urlData.read().decode())
+    try:
+        urlData = urlopen(urlReq)
+        return json.loads(urlData.read().decode())
+    except HTTPError as htpErr:
+        print("Error %3d: %s" % (htpErr.code, htpErr.reason))
+        if htpErr.code == 429:
+            sleep(60)
+        elif htpErr.code == 418:
+            sleep(300)
+        return {"Error":True}
+    except URLError as urlErr:
+        print("Error %3d: %s" % (urlErr.code, urlErr.reason))
+        return {"Error":True}
+    except:
+        print("Unknown Error")
+        return {"Error":True}
 
 def signalHandler(theSignal, theFrame):
     print("\nExiting ...")
@@ -60,15 +75,20 @@ END       = "\033[0;0m"
 okPairs = {}
 apiCall = "https://api.binance.com/api/v1/exchangeInfo"
 apiJSON = getJSON(apiCall)
+if "Error" in apiJSON.keys():
+    print("Stopping ...")
+    sys.exit(1)
 for exPair in apiJSON["symbols"]:
     okPairs[exPair["symbol"]] = exPair["quoteAsset"]
 
 if len(sys.argv) < 3:
     print("Error: No currency pair specified")
-    print("Usage: %s [interval]/[trend] PAIR1 PAIR2 ..." % os.path.basename(sys.argv[0]))
-    print("       %s [interval]/[trend] pairFile.dat"    % os.path.basename(sys.argv[0]))
+    print("Usage: %s [interval]/[trend]/[trend] PAIR1 PAIR2 ..." % os.path.basename(sys.argv[0]))
+    print("       %s [interval]/[trend]/[trend] pairFile.dat"    % os.path.basename(sys.argv[0]))
     print("Where: [interval] is the refresh time in units of s, m or h. E.g. 10s")
     print("       [trend]    is optionally the time to calculate hourly trends over, in units of s, m or h.")
+    print("                  Two such trend times can be calculated. It is assumed that the second one is")
+    print("                  shorter than the first. These are labelled ST and LT for Short and Long Trend.")
     print("       PAIR1...n  are the exchange pairs. See Binance exchange for valid pairs.")
     print("       Alternatively, a file of pairs to monitor that will be read every cycle.")
     sys.exit(1)
@@ -79,19 +99,28 @@ useFile  = os.path.isfile(theFile)
 inTemp   = sys.argv[1]
 inSplit  = inTemp.split("/")
 theWait  = stringToSeconds(inSplit[0])
-if len(inSplit) > 1:
-    theTrend = stringToSeconds(inSplit[1])+0.49*theWait
-else:
-    theTrend = theWait*24
 
-if theTrend/theWait > maxHist:
-    maxHist = round(theTrend/theWait)+10
+if len(inSplit) > 1:
+    theLTrend = stringToSeconds(inSplit[1])+0.49*theWait
+else:
+    theLTrend = theWait*24
+
+if len(inSplit) > 2:
+    theSTrend = stringToSeconds(inSplit[2])+0.49*theWait
+else:
+    theSTrend = 0.0
+
+if theLTrend/theWait > maxHist:
+    maxHist = round(theLTrend/theWait)+10
 
 theHist = {}
 theTime = {}
 
-tSpan = 0
-wLen  = 86
+lSpan = 0
+sSpan = 0
+wLen  = 72
+if theLTrend > 0.0: wLen += 9
+if theSTrend > 0.0: wLen += 10
 
 while True:
     
@@ -126,6 +155,9 @@ while True:
         apiCall = "http://api.binance.com/api/v1/ticker/24hr?symbol=%s" % theCoin
         apiJSON = getJSON(apiCall)
         
+        if "Error" in apiJSON.keys():
+            continue
+        
         theSymbol = apiJSON["symbol"]
         lastPrice = float(apiJSON["lastPrice"])
         lowPrice  = float(apiJSON["lowPrice"])
@@ -137,14 +169,29 @@ while True:
         theHist[theCoin].append(lastPrice)
         theTime[theCoin].append(timeNow)
         
-        nHist = len(theHist[theCoin])
-        yFit  = (0,0)
+        nHist  = len(theHist[theCoin])
+        yFit   = (0,0)
+        lTrend = 0.0
+        sTrend = 0.0
         if nHist > 1:
-            xTimes = [i for i in theTime[theCoin] if i >= timeNow-theTrend]
-            nTimes = len(xTimes)
-            xData  = np.linspace(0,theWait*(nTimes-1),nTimes)
-            yFit   = np.polyfit(theTime[theCoin][-nTimes:],theHist[theCoin][-nTimes:],1)
-            tSpan  = timeNow-xTimes[0]
+            if theLTrend > 0.0:
+                xTimes = [i for i in theTime[theCoin] if i >= timeNow-theLTrend]
+                nTimes = len(xTimes)
+                xData  = np.linspace(0,theWait*(nTimes-1),nTimes)
+                yFit   = np.polyfit(theTime[theCoin][-nTimes:],theHist[theCoin][-nTimes:],1)
+                lSpan  = timeNow-xTimes[0]
+                lTrend = 360000*yFit[0]/lastPrice
+            else:
+                lTrend = 0.0
+            if theSTrend > 0.0:
+                xTimes = [i for i in theTime[theCoin] if i >= timeNow-theSTrend]
+                nTimes = len(xTimes)
+                xData  = np.linspace(0,theWait*(nTimes-1),nTimes)
+                yFit   = np.polyfit(theTime[theCoin][-nTimes:],theHist[theCoin][-nTimes:],1)
+                sSpan  = timeNow-xTimes[0]
+                sTrend = 360000*yFit[0]/lastPrice
+            else:
+                sTrend = 0
         if nHist > maxHist:
             theHist[theCoin].pop(0)
             theTime[theCoin].pop(0)
@@ -168,18 +215,37 @@ while True:
         else:
             toPrint += (GREEN+"%+7.2f%%"+END) % change24h
         
-        hTrend = 360000*yFit[0]/lastPrice
-        if hTrend < 0:
-            toPrint += (RED+"  [T:%+6.2f %%/h]"+END)   % hTrend
-        elif hTrend < 100.0:
-            toPrint += (GREEN+"  [T:%+6.2f %%/h]"+END) % hTrend
-        else:
-            toPrint += (GREEN+"  [T:>99.99%/h]"+END)
+        toPrint += "  "
+        if theSTrend > 0.0:
+            if   sTrend < -99.99:
+                toPrint += (RED+  "ST:<99.99 " +END)
+            elif sTrend <   0.00:
+                toPrint += (RED+  "ST:%+6.2f "+END) % sTrend
+            elif sTrend < 100.00:
+                toPrint += (GREEN+"ST:%+6.2f "+END) % sTrend
+            else:
+                toPrint += (GREEN+"ST:>99.99 " +END)
+        if theLTrend > 0.0:
+            if   lTrend < -99.99:
+                toPrint += (RED+  "LT:<99.99" +END)
+            elif lTrend <   0.00:
+                toPrint += (RED+  "LT:%+6.2f"+END) % lTrend
+            elif lTrend < 100.00:
+                toPrint += (GREEN+"LT:%+6.2f"+END) % lTrend
+            else:
+                toPrint += (GREEN+"LT:>99.99" +END)
         
         toPrint += "\n"
     
     toPrint += "\n"
-    prTrend  = "Trend calculated over %.2f minutes" % (tSpan/60)
+    prTrend  = "Trend calculated over "
+    if lSpan > 0.0:
+        prTrend += "%.2f" % (lSpan/60)
+    if sSpan > 0.0:
+        prTrend += "/%.2f" % (sSpan/60)
+    if lSpan + sSpan == 0.0:
+        prTrend += "0.00"
+    prTrend += " minutes in %/h"
     
     # Calculate sleep time
     if nHist > 1:
