@@ -216,15 +216,6 @@ while True:
             toPrint += (GREEN+"%+7.2f%%"+END) % change24h
         
         toPrint += "  "
-        if theSTrend > 0.0:
-            if   sTrend < -99.99:
-                toPrint += (RED+  "ST:<99.99 " +END)
-            elif sTrend <   0.00:
-                toPrint += (RED+  "ST:%+6.2f "+END) % sTrend
-            elif sTrend < 100.00:
-                toPrint += (GREEN+"ST:%+6.2f "+END) % sTrend
-            else:
-                toPrint += (GREEN+"ST:>99.99 " +END)
         if theLTrend > 0.0:
             if   lTrend < -99.99:
                 toPrint += (RED+  "LT:<99.99" +END)
@@ -234,6 +225,15 @@ while True:
                 toPrint += (GREEN+"LT:%+6.2f"+END) % lTrend
             else:
                 toPrint += (GREEN+"LT:>99.99" +END)
+        if theSTrend > 0.0:
+            if   sTrend < -99.99:
+                toPrint += (RED+  " ST:<99.99" +END)
+            elif sTrend <   0.00:
+                toPrint += (RED+  " ST:%+6.2f"+END) % sTrend
+            elif sTrend < 100.00:
+                toPrint += (GREEN+" ST:%+6.2f"+END) % sTrend
+            else:
+                toPrint += (GREEN+" ST:>99.99" +END)
         
         toPrint += "\n"
     
