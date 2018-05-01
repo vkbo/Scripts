@@ -11,7 +11,7 @@ import json, sys, os, signal
 import numpy        as np
 
 from urllib.request import Request, urlopen
-from urllib.error   import HTTPError
+from urllib.error   import HTTPError, URLError
 from time           import time, sleep
 from datetime       import datetime
 
@@ -118,9 +118,9 @@ theTime = {}
 
 lSpan = 0
 sSpan = 0
-wLen  = 72
-if theLTrend > 0.0: wLen += 9
-if theSTrend > 0.0: wLen += 10
+wLen  = 79
+if theLTrend > 0.0: wLen += 10
+if theSTrend > 0.0: wLen += 11
 
 while True:
     
@@ -164,6 +164,7 @@ while True:
         highPrice = float(apiJSON["highPrice"])
         openPrice = float(apiJSON["openPrice"])
         change24h = 100*(lastPrice-openPrice)/openPrice
+        stochOsc  = 100*(lastPrice-lowPrice)/(highPrice-lowPrice)
         
         timeNow   = time()
         theHist[theCoin].append(lastPrice)
@@ -218,34 +219,45 @@ while True:
         toPrint += "  "
         if theLTrend > 0.0:
             if   lTrend < -99.99:
-                toPrint += (RED+  "LT:<99.99" +END)
+                toPrint += (RED+  "L:<99.99%" +END)
             elif lTrend <   0.00:
-                toPrint += (RED+  "LT:%+6.2f"+END) % lTrend
+                toPrint += (RED+  "L:%+6.2f%%"+END) % lTrend
             elif lTrend < 100.00:
-                toPrint += (GREEN+"LT:%+6.2f"+END) % lTrend
+                toPrint += (GREEN+"L:%+6.2f%%"+END) % lTrend
             else:
-                toPrint += (GREEN+"LT:>99.99" +END)
+                toPrint += (GREEN+"L:>99.99%" +END)
         if theSTrend > 0.0:
             if   sTrend < -99.99:
-                toPrint += (RED+  " ST:<99.99" +END)
+                toPrint += (RED+  " S:<99.99%" +END)
             elif sTrend <   0.00:
-                toPrint += (RED+  " ST:%+6.2f"+END) % sTrend
+                toPrint += (RED+  " S:%+6.2f%%"+END) % sTrend
             elif sTrend < 100.00:
-                toPrint += (GREEN+" ST:%+6.2f"+END) % sTrend
+                toPrint += (GREEN+" S:%+6.2f%%"+END) % sTrend
             else:
-                toPrint += (GREEN+" ST:>99.99" +END)
+                toPrint += (GREEN+" S:>99.99%" +END)
+        
+        if   stochOsc >= 99.9:
+            toPrint += (RED   +"   %K:99.9" +END)
+        elif stochOsc >= 80.0:
+            toPrint += (RED   +"  %%K:%4.1f"+END) % stochOsc
+        elif stochOsc >  20.0:
+            toPrint += (YELLOW+"  %%K:%4.1f"+END) % stochOsc
+        elif stochOsc >=  0.0:
+            toPrint += (GREEN +"  %%K:%4.1f"+END) % stochOsc
+        else:
+            toPrint += (GREEN +"   %K: 0.0" +END)
         
         toPrint += "\n"
     
     toPrint += "\n"
-    prTrend  = "Trend calculated over "
+    prTrend  = "Hourly trends over "
     if lSpan > 0.0:
-        prTrend += "%.2f" % (lSpan/60)
+        prTrend += "%.1f" % (lSpan/60)
     if sSpan > 0.0:
-        prTrend += "/%.2f" % (sSpan/60)
+        prTrend += " and %.1f" % (sSpan/60)
     if lSpan + sSpan == 0.0:
-        prTrend += "0.00"
-    prTrend += " minutes in %/h"
+        prTrend += "0.0"
+    prTrend += " minutes. Stochastic Osc. 24h."
     
     # Calculate sleep time
     if nHist > 1:
