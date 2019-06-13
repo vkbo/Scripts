@@ -74,6 +74,7 @@ apt install -y \
     fonts-roboto \
     fonts-noto \
     gcc \
+    gdb \
     geany \
     geany-plugins \
     gfortran \
@@ -91,9 +92,12 @@ apt install -y \
     ipython3 \
     keepass2 \
     libboost-all-dev \
+    libgmp-dev \
     libhdf5-dev \
     libhdf5-openmpi-dev \
     libhunspell-dev \
+    libmpc-dev \
+    libmpfr-dev \
     libopenmpi-dev \
     libqt5concurrent5 \
     libqt5printsupport5 \
@@ -131,6 +135,7 @@ apt install -y \
     qt5-default \
     rar \
     rdesktop \
+    remmina \
     rsync \
     screen \
     secure-delete \
@@ -174,21 +179,20 @@ if [ ! -f /etc/apt/sources.list.d/syncthing.list ]; then
 fi
 
 # Spotify
-if [ ! -f /etc/apt/sources.list.d/spotify.list ]; then
-    echo ""
-    echo "Installing Spotify ..."
-    echo "****************************************************************************************************"
-    echo ""
-    apt install -y dirmngr
-#   apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 0DF731E45CE24F27EEEB1450EFDC8610341D9410
-    apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 931FF8E79F0876134EDDBDCCA87FF9DF48BF1C90
-    echo deb http://repository.spotify.com stable non-free | tee /etc/apt/sources.list.d/spotify.list
-    apt update
-    apt install -y spotify-client
-    apt -f install
-    echo "****************************************************************************************************"
-    echo ""
-fi
+# if [ ! -f /etc/apt/sources.list.d/spotify.list ]; then
+#     echo ""
+#     echo "Installing Spotify ..."
+#     echo "****************************************************************************************************"
+#     echo ""
+#     apt install -y dirmngr
+#     apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 931FF8E79F0876134EDDBDCCA87FF9DF48BF1C90
+#     echo deb http://repository.spotify.com stable non-free | tee /etc/apt/sources.list.d/spotify.list
+#     apt update
+#     apt install -y spotify-client
+#     apt -f install
+#     echo "****************************************************************************************************"
+#     echo ""
+# fi
 
 # NodeJS
 if [ ! -f /etc/apt/sources.list.d/nodesource.list ]; then
