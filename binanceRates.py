@@ -27,14 +27,14 @@ def getJSON(apiCall):
         urlData = urlopen(urlReq)
         return json.loads(urlData.read().decode())
     except HTTPError as htpErr:
-        print("Error %3d: %s" % (htpErr.code, htpErr.reason))
+        print("HTTP Error %3d: %s" % (htpErr.code, htpErr.reason))
         if htpErr.code == 429:
             sleep(60)
         elif htpErr.code == 418:
             sleep(300)
         return {"Error":True}
     except URLError as urlErr:
-        print("Error %3d: %s" % (urlErr.code, urlErr.reason))
+        print("URL Error: %s" % urlErr.reason)
         return {"Error":True}
     except:
         print("Unknown Error")
@@ -100,6 +100,10 @@ inTemp   = sys.argv[1]
 inSplit  = inTemp.split("/")
 theWait  = stringToSeconds(inSplit[0])
 
+xSort = {}
+for n, theCoin in enumerate(theCoins):
+    xSort[theCoin] = -n
+
 if len(inSplit) > 1:
     theLTrend = stringToSeconds(inSplit[1])+0.49*theWait
 else:
@@ -118,17 +122,17 @@ theTime = {}
 
 lSpan = 0
 sSpan = 0
-wLen  = 79
+wLen  = 90
 if theLTrend > 0.0: wLen += 10
 if theSTrend > 0.0: wLen += 11
 
 while True:
-    
+
     toPrint  = "Every %.1f seconds:" % theWait
     toPrint += " "*(wLen-len(toPrint)-19)
     toPrint += datetime.fromtimestamp(time()).strftime('%Y-%m-%d %H:%M:%S')+"\n"
     toPrint += "\n"
-    
+
     if useFile:
         theCoins = []
         with open(theFile,mode="r") as inFile:
@@ -137,39 +141,58 @@ while True:
                 if len(inLine) < 5:  continue
                 if inLine[0] == "#": continue
                 theCoins.append(inLine)
-    
-    for theCoin in theCoins:
-        
+                if inLine not in xSort.keys():
+                    xSort[inLine] = 0
+        delCoin = []
+        for theCoin in xSort.keys():
+            if theCoin not in theCoins:
+                delCoin.append(theCoin)
+        for theCoin in delCoin:
+            del xSort[theCoin]
+
+    theSorted = sorted(xSort.items(), key=lambda x: x[1], reverse=True)
+    xSort = {}
+
+    for theCoin, theKey in theSorted:
+
         if theCoin == "":
             continue
-        
+
         if theCoin not in okPairs.keys():
             toPrint += (BOLD+"%-8s: "+END) % theCoin
             toPrint += RED+"Invalid trading pair"+END+"\n"
             continue
-        
+
         if not theCoin in theHist.keys():
             theHist[theCoin] = []
             theTime[theCoin] = []
-        
+
         apiCall = "http://api.binance.com/api/v1/ticker/24hr?symbol=%s" % theCoin
         apiJSON = getJSON(apiCall)
-        
+
         if "Error" in apiJSON.keys():
             continue
-        
+
         theSymbol = apiJSON["symbol"]
         lastPrice = float(apiJSON["lastPrice"])
         lowPrice  = float(apiJSON["lowPrice"])
         highPrice = float(apiJSON["highPrice"])
         openPrice = float(apiJSON["openPrice"])
+        qVolume   = float(apiJSON["quoteVolume"])
+        cVolume   = float(apiJSON["volume"])
+        if lastPrice * lowPrice * highPrice * openPrice == 0.0:
+            toPrint += (BOLD+"%-8s: "+END) % theSymbol
+            toPrint += RED+"Unexpected zero values returned."+END+"\n"
+            continue
+
         change24h = 100*(lastPrice-openPrice)/openPrice
         stochOsc  = 100*(lastPrice-lowPrice)/(highPrice-lowPrice)
-        
+
         timeNow   = time()
         theHist[theCoin].append(lastPrice)
         theTime[theCoin].append(timeNow)
-        
+        xSort[theCoin] = lastPrice
+
         nHist  = len(theHist[theCoin])
         yFit   = (0,0)
         lTrend = 0.0
@@ -196,7 +219,7 @@ while True:
         if nHist > maxHist:
             theHist[theCoin].pop(0)
             theTime[theCoin].pop(0)
-        
+
         if   okPairs[theCoin] == "BTC":
             fmtNum = "%10.8f"
         elif okPairs[theCoin] == "ETH":
@@ -207,15 +230,23 @@ while True:
             fmtNum = "%10.4f"
         else:
             fmtNum = "%10.6f"
-        
+
+        if   okPairs[theCoin] == "BTC":
+            qVolume *= 1e-3
+            volSc    = "K"
+        else:
+            qVolume *= 1e-6
+            volSc    = "M"
+
         toPrint += (BOLD+"%-8s: "+END) % theSymbol
         toPrint += (CYAN+fmtNum+" "+END) % lastPrice
-        toPrint += (YELLOW+"(L:"+fmtNum+" H:"+fmtNum+" O:"+fmtNum+") "+END) % (lowPrice,highPrice,openPrice)
+        # toPrint += (CYAN+"V:%5.1f%s"+" "+END) % (qVolume,scChar[nM])
+        toPrint += (YELLOW+"(L:"+fmtNum+" H:"+fmtNum+" O:"+fmtNum+" V:%7.2f%s) "+END) % (lowPrice,highPrice,openPrice,qVolume,volSc)
         if change24h < 0:
             toPrint += (RED+"%+7.2f%%"+END)   % change24h
         else:
             toPrint += (GREEN+"%+7.2f%%"+END) % change24h
-        
+
         toPrint += "  "
         if theLTrend > 0.0:
             if   lTrend < -99.99:
@@ -235,9 +266,9 @@ while True:
                 toPrint += (GREEN+" S:%+6.2f%%"+END) % sTrend
             else:
                 toPrint += (GREEN+" S:>99.99%" +END)
-        
+
         if   stochOsc >= 99.9:
-            toPrint += (RED   +"   %K:99.9" +END)
+            toPrint += (RED   + "  %K:99.9" +END)
         elif stochOsc >= 80.0:
             toPrint += (RED   +"  %%K:%4.1f"+END) % stochOsc
         elif stochOsc >  20.0:
@@ -245,10 +276,10 @@ while True:
         elif stochOsc >=  0.0:
             toPrint += (GREEN +"  %%K:%4.1f"+END) % stochOsc
         else:
-            toPrint += (GREEN +"   %K: 0.0" +END)
-        
+            toPrint += (GREEN + "  %K: 0.0" +END)
+
         toPrint += "\n"
-    
+
     toPrint += "\n"
     prTrend  = "Hourly trends over "
     if lSpan > 0.0:
@@ -258,7 +289,7 @@ while True:
     if lSpan + sSpan == 0.0:
         prTrend += "0.0"
     prTrend += " minutes. Stochastic Osc. 24h."
-    
+
     # Calculate sleep time
     if nHist > 1:
         actTime  = theTime[theCoin][-1]-theTime[theCoin][0]
@@ -271,9 +302,9 @@ while True:
     else:
         prTime = ""
         toWait = theWait
-    
+
     toPrint += prTrend+(" "*(wLen-len(prTrend)-len(prTime)))+prTime
-    
+
     print("\033[H\033[J",end="")
     sys.stdout.flush()
     print(toPrint)
