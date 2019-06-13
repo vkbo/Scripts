@@ -73,7 +73,7 @@ for tState in listOrder:
         if not bSortTasks[tName]["State"] == tState: continue
         if not prevState == bSortTasks[tName]["State"]:
             print()
-            print((BOLD+" {:60.60}  Elapsed   Remain    Progress"+END).format(bSortTasks[tName]["State"]))
+            print((BOLD+" {:90.90}  Elapsed   Remain    Progress"+END).format(bSortTasks[tName]["State"]))
             prevState = bSortTasks[tName]["State"]
         if bSortTasks[tName]["Progress"] < 40:
             colProg = RED
@@ -81,7 +81,7 @@ for tState in listOrder:
             colProg = YELLOW
         else:
             colProg = GREEN
-        print((" {:60.60}  "+colProg+"{:8}  {:8}  {:7.3f}%"+END).format(
+        print((" {:90.90}  "+colProg+"{:8}  {:8}  {:7.3f}%"+END).format(
             bSortTasks[tName]["Name"],
             formatTime(bSortTasks[tName]["Elapsed"]),
             formatTime(bSortTasks[tName]["Remaining"]),
