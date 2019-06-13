@@ -32,11 +32,11 @@ from datetime import datetime
 # ==========
 
 # Which crypto currencies to look up
-getCrypto   = ["BTC","XMR"]
+getCrypto   = ["BTC","XMR","USDT"]
 
 # What currencies (rows) to list against (columns) in the final table
-listFinal   = ["CHF","DKK","EUR","GBP","NOK","SEK","USD","XMR"]
-listAgainst = ["CHF","EUR","NOK","GBP","USD","BTC","XMR"]
+listFinal   = ["CHF","DKK","EUR","GBP","NOK","SEK","USD","USDT","XMR"]
+listAgainst = ["CHF","EUR","NOK","GBP","USD","USDT","BTC","XMR"]
 listHLCol   = ""
 listHLRow   = "NOK"
 
@@ -91,13 +91,13 @@ print(END)
 
 finalTable = " "+BOLD+"Curr"+END+" "
 for sAgainst in listAgainst:
-    finalTable += ("    "+BOLD+"%s"+END+"   ") % sAgainst
+    finalTable += ("    "+BOLD+"%-5s"+END+" ") % sAgainst
 
 finalTable += "\n"
 finalTable += "="*(len(listAgainst)*10+6)+"\n"
 
 for sFinal in listFinal:
-    finalTable += (" "+BOLD+"%s"+END+"  ") % sFinal
+    finalTable += (" "+BOLD+"%-4s"+END+" ") % sFinal
     for sAgainst in listAgainst:
         if sAgainst in allRates.keys() and sFinal in allRates.keys():
             if allRates[sAgainst] > 0:
