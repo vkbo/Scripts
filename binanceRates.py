@@ -9,9 +9,6 @@
 
 import json, sys, os, signal
 import numpy        as np
-import socket
-
-socket.setdefaulttimeout(10)
 
 from urllib.request import Request, urlopen
 from urllib.error   import HTTPError, URLError
@@ -27,7 +24,7 @@ def getJSON(apiCall):
     urlReq.add_header("User-Agent","Mozilla/5.0 (compatible; Python script)")
     urlReq.add_header("Content-Type","application/json")
     try:
-        urlData = urlopen(urlReq)
+        urlData = urlopen(urlReq, timeout=10)
         return json.loads(urlData.read().decode())
     except HTTPError as htpErr:
         print("HTTP Error %3d: %s" % (htpErr.code, htpErr.reason))
