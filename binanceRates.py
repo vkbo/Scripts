@@ -9,6 +9,9 @@
 
 import json, sys, os, signal
 import numpy        as np
+import socket
+
+socket.setdefaulttimeout(10)
 
 from urllib.request import Request, urlopen
 from urllib.error   import HTTPError, URLError
@@ -181,7 +184,7 @@ while True:
         qVolume   = float(apiJSON["quoteVolume"])
         cVolume   = float(apiJSON["volume"])
         if lastPrice * lowPrice * highPrice * openPrice == 0.0:
-            toPrint += (BOLD+"%-8s: "+END) % theSymbol
+            toPrint += (BOLD+"%-11s "+END) % theSymbol
             toPrint += RED+"Unexpected zero values returned."+END+"\n"
             continue
 
