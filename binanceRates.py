@@ -122,7 +122,7 @@ theTime = {}
 
 lSpan = 0
 sSpan = 0
-wLen  = 90
+wLen  = 92
 if theLTrend > 0.0: wLen += 10
 if theSTrend > 0.0: wLen += 11
 
@@ -159,7 +159,7 @@ while True:
             continue
 
         if theCoin not in okPairs.keys():
-            toPrint += (BOLD+"%-8s: "+END) % theCoin
+            toPrint += (BOLD+"%-11s "+END) % theCoin
             toPrint += RED+"Invalid trading pair"+END+"\n"
             continue
 
@@ -238,7 +238,7 @@ while True:
             qVolume *= 1e-6
             volSc    = "M"
 
-        toPrint += (BOLD+"%-8s: "+END) % theSymbol
+        toPrint += (BOLD+"%-11s "+END) % theSymbol
         toPrint += (CYAN+fmtNum+" "+END) % lastPrice
         # toPrint += (CYAN+"V:%5.1f%s"+" "+END) % (qVolume,scChar[nM])
         toPrint += (YELLOW+"(L:"+fmtNum+" H:"+fmtNum+" O:"+fmtNum+" V:%7.2f%s) "+END) % (lowPrice,highPrice,openPrice,qVolume,volSc)
