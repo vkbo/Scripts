@@ -269,14 +269,18 @@ while True:
 
         if   stochOsc >= 99.9:
             toPrint += (RED   + "  %K:99.9" +END)
-        elif stochOsc >= 80.0:
+        elif stochOsc >= 90.0:
             toPrint += (RED   +"  %%K:%4.1f"+END) % stochOsc
-        elif stochOsc >  20.0:
+        elif stochOsc >= 75.0:
             toPrint += (YELLOW+"  %%K:%4.1f"+END) % stochOsc
-        elif stochOsc >=  0.0:
+        elif stochOsc >= 25.0:
             toPrint += (GREEN +"  %%K:%4.1f"+END) % stochOsc
+        elif stochOsc >= 10.0:
+            toPrint += (YELLOW+"  %%K:%4.1f"+END) % stochOsc
+        elif stochOsc >   0.0:
+            toPrint += (RED   +"  %%K:%4.1f"+END) % stochOsc
         else:
-            toPrint += (GREEN + "  %K: 0.0" +END)
+            toPrint += (RED   + "  %K: 0.0" +END)
 
         toPrint += "\n"
 
