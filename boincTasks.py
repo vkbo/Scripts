@@ -57,16 +57,18 @@ for stdLine in str(stdOut).split("\\n"):
             bTasks[tNum]["Remaining"] = float(tSplit[1].strip())
         elif tSplit[0] == "fraction done":
             bTasks[tNum]["Progress"] = float(tSplit[1].strip())*100
+        if bTasks[tNum]["State"] == "UNINITIALIZED" and bTasks[tNum]["Elapsed"] > 0:
+            bTasks[tNum]["State"] = "WAITING"
 
 bSortTasks = {}
 for tNum in bTasks.keys():
     bSortTasks[bTasks[tNum]["Name"]] = bTasks[tNum]
 
-#~ print(bSortTasks)
+# print(bSortTasks)
 
 print(BOLD+" BOINC Status"+END)
 
-listOrder = ["EXECUTING","SUSPENDED","UNINITIALIZED"]
+listOrder = ["EXECUTING","SUSPENDED","WAITING","UNINITIALIZED"]
 prevState = None
 for tState in listOrder:
     for tName in sorted(bSortTasks.keys()):
