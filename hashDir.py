@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import os, sys, subprocess, signal
+import os, sys, subprocess, signal, datetime
 
 if len(sys.argv) != 3:
     print("ERROR hashDir requires a command and a path as input arguments.")
@@ -33,11 +33,15 @@ def signalHandler(theSignal, theFrame):
 # Capture ctrl+c
 signal.signal(signal.SIGINT, signalHandler)
 
-baseDir = os.path.basename(sys.argv[2].rstrip("/"))
-rootDir = os.path.dirname(sys.argv[2].rstrip("/"))
+baseDir = os.path.basename(os.path.abspath(sys.argv[2].rstrip("/")))
+rootDir = os.path.dirname(os.path.abspath(sys.argv[2].rstrip("/")))
 scanDir = os.path.join(rootDir, baseDir)
+backDir = os.path.join(rootDir, "Backup")
+timeStamp = datetime.datetime.now().strftime("%Y-%m-%d")
 hashFile = os.path.join(rootDir, baseDir+".md5")
-backFile = os.path.join(rootDir, baseDir+".bak")
+backFile = os.path.join(backDir, baseDir+"-"+timeStamp+".md5")
+if not os.path.isdir(backDir):
+    os.mkdir(backDir)
 
 hashData = {}
 if os.path.isfile(hashFile):
