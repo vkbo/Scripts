@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
-import os, sys, subprocess, signal, datetime
+import os
+import sys
+import subprocess
+import signal
+import datetime
 
 if len(sys.argv) != 3:
     print("ERROR hashDir requires a command and a path as input arguments.")
@@ -26,9 +29,11 @@ if not os.path.isdir(sys.argv[2]):
     print("ERROR Unknown directory '%s'" % sys.argv[2])
     sys.exit(1)
 
+
 def signalHandler(theSignal, theFrame):
     print("\nExiting ...")
     sys.exit(0)
+
 
 # Capture ctrl+c
 signal.signal(signal.SIGINT, signalHandler)
@@ -88,7 +93,12 @@ for chkFile in sorted(fileList):
     doCompare = doCheck and isKnown
 
     if doCheck or (doMaintain and not isKnown):
-        sysP = subprocess.Popen(["md5sum \"%s\"" % chkFile], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        sysP = subprocess.Popen(
+            ["md5sum \"%s\"" % chkFile],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            shell=True
+        )
         stdOut, stdErr = sysP.communicate()
         newHash = stdOut.decode("utf-8")[:32].rstrip("\n")
     else:
