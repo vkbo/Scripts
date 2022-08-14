@@ -138,7 +138,7 @@ def hashDir(args):
                     saveHash = oldHash
                 else:
                     if doWrite:
-                        theStatus = "***Fail+Up"
+                        theStatus = "***Updated"
                         saveHash = newHash
                     else:
                         theStatus = "***Failed"
@@ -147,8 +147,8 @@ def hashDir(args):
 
         else:
             if isGone:
-                theStatus = "   Missing"
-                saveHash = " "*32
+                theStatus = "***Gone"
+                saveHash = "-"*32
             else:
                 theStatus = "   NewFile"
                 newList.append((chkFile, newHash))
