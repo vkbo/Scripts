@@ -1,179 +1,234 @@
 #!/usr/bin/env python3
+"""Simple tool to hash and verify files in a tree.
+"""
 
 import os
 import sys
-import subprocess
 import signal
+import argparse
 import datetime
-
-if len(sys.argv) != 3:
-    print("ERROR hashDir requires a command and a path as input arguments.")
-    print("Valid commands are: maintain, check or check+update")
-    sys.exit(1)
-
-doMaintain = False
-doUpdate = False
-doCheck = False
-if sys.argv[1] == "maintain":
-    doMaintain = True
-elif sys.argv[1] == "check":
-    doCheck = True
-elif sys.argv[1] == "check+update":
-    doUpdate = True
-    doCheck = True
-else:
-    print("ERROR Unknown command '%s'" % sys.argv[1])
-    sys.exit(1)
-
-if not os.path.isdir(sys.argv[2]):
-    print("ERROR Unknown directory '%s'" % sys.argv[2])
-    sys.exit(1)
+import subprocess
 
 
-def signalHandler(theSignal, theFrame):
+def signalHandler(signal, frame):
     print("\nExiting ...")
     sys.exit(0)
 
 
-# Capture ctrl+c
-signal.signal(signal.SIGINT, signalHandler)
+def formatFileSize(value):
+    """Formats a file size with kB, MB, GB, etc.
+    """
+    if not isinstance(value, int):
+        return "ERR"
 
-baseDir = os.path.basename(os.path.abspath(sys.argv[2].rstrip("/")))
-rootDir = os.path.dirname(os.path.abspath(sys.argv[2].rstrip("/")))
-scanDir = os.path.join(rootDir, baseDir)
-backDir = os.path.join(rootDir, "Backup")
-timeStamp = datetime.datetime.now().strftime("%Y-%m-%d")
-hashFile = os.path.join(rootDir, baseDir+".md5")
-backFile = os.path.join(backDir, baseDir+"-"+timeStamp+".md5")
-if not os.path.isdir(backDir):
-    os.mkdir(backDir)
+    theVal = float(value)
+    for pF in ["k", "M", "G", "T", "P", "E"]:
+        theVal /= 1000.0
+        if theVal < 1000.0:
+            if theVal < 10.0:
+                return f"{theVal:5.3f} {pF}B"
+            elif theVal < 100.0:
+                return f"{theVal:5.2f} {pF}B"
+            else:
+                return f"{theVal:5.1f} {pF}B"
 
-hashData = {}
-if os.path.isfile(hashFile):
-    with open(hashFile, mode="r") as inFile:
-        for hashLine in inFile:
-            if len(hashLine) > 34:
-                theHash = hashLine[:32]
-                theFile = hashLine[34:].rstrip("\n")
-                hashData[theFile] = [theHash, False]
+    return str(value)
 
-os.chdir(rootDir)
 
-fileList = []
-for tRoot, tDirs, tFiles in os.walk(baseDir):
-    if len(tFiles) > 0:
-        for tFile in tFiles:
-            fileList.append(os.path.join(tRoot, tFile))
+def hashDir(args):
 
-nFiles = len(fileList)
-nCount = 0
-failList = []
-newList = []
+    print("Hashing Folder")
+    print("==============")
 
-print("")
-print("Folder: %s" % scanDir)
-print("Files: %d" % nFiles)
-if doCheck:
-    print("Run Mode: Check")
-if doMaintain:
-    print("Run Mode: Maintain")
-print("")
+    # Capture ctrl+c
+    signal.signal(signal.SIGINT, signalHandler)
 
-if doMaintain or doUpdate:
-    if os.path.isfile(backFile):
-        os.unlink(backFile)
+    scanDir = os.path.relpath(args.path)
+    baseDir = os.path.basename(os.path.abspath(args.path.rstrip("/")))
+    hashDir = os.path.abspath(args.md5dir)
+    backDir = os.path.join(hashDir, "backup")
+    hashFile = os.path.join(hashDir, baseDir+".md5")
+
+    if not os.path.isdir(hashDir):
+        os.mkdir(hashDir)
+    if not os.path.isdir(backDir):
+        os.mkdir(backDir)
+
+    print(f"Scan Path: {scanDir}")
+    print(f"Hash File: {hashFile}")
+    print("")
+
+    hashData = {}
+    print("Scanning for previous hash file ... ", end="")
     if os.path.isfile(hashFile):
-        os.rename(hashFile, backFile)
-    outFile = open(hashFile, mode="w+")
-
-for chkFile in sorted(fileList):
-    theStatus = "   None"
-    isKnown   = chkFile in hashData
-    doHash    = doCheck or (doMaintain and not isKnown)
-    doCompare = doCheck and isKnown
-
-    if doCheck or (doMaintain and not isKnown):
-        sysP = subprocess.Popen(
-            ["md5sum \"%s\"" % chkFile],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            shell=True
-        )
-        stdOut, stdErr = sysP.communicate()
-        newHash = stdOut.decode("utf-8")[:32].rstrip("\n")
+        with open(hashFile, mode="r") as inFile:
+            for hashLine in inFile:
+                if len(hashLine) > 34:
+                    theHash = hashLine[:32]
+                    theFile = hashLine[34:].rstrip("\n")
+                    hashData[theFile] = [theHash, False]
+            print(f"found {len(hashData)} records")
     else:
-        newHash = "X"*32
+        print("not found")
 
-    if isKnown:
-        prevHash = hashData[chkFile][0]
-        hashData[chkFile][1] = True
-    else:
-        prevHash = "Z"*32
+    fileList = []
+    print("Scanning for files ... ", end="")
+    for tRoot, _, tFiles in os.walk(scanDir):
+        if len(tFiles) > 0:
+            for tFile in tFiles:
+                fileList.append(os.path.join(tRoot, tFile))
+    print(f"found {len(fileList)} files")
+    print("")
 
-    if doMaintain:
+    nFiles = len(fileList)
+    nCount = 0
+    failList = []
+    newList = []
+
+    doList = args.update or args.maintain or args.maintain or args.list
+    doScan = (args.update or args.maintain or args.maintain) and not args.list
+    doWrite = (args.update or args.maintain) and not args.list
+    doCompare = args.check or args.update
+
+    print("Run Mode:")
+    print(" - Check file existence (list): %s" % ("Yes" if doList else "No"))
+    print(" - Add new files (maintain): %s" % ("Yes" if doScan else "No"))
+    print(" - Remove deleted files (maintain): %s" % ("Yes" if doScan else "No"))
+    print(" - Check existing records (check): %s" % ("Yes" if doCompare else "No"))
+    print(" - Update existing records (update): %s" % ("Yes" if doWrite else "No"))
+    print("")
+
+    if doWrite:
+        if os.path.isfile(hashFile):
+            modTime = os.path.getmtime(hashFile)
+            timeStamp = datetime.datetime.fromtimestamp(modTime).strftime("%Y%m%d-%H%M%S")
+            backFile = os.path.join(backDir, baseDir+"-"+timeStamp+".md5")
+            os.rename(hashFile, backFile)
+            print(f"Copied: {hashFile} -> {backFile}")
+            print("")
+        outFile = open(hashFile, mode="w+")
+
+    for chkFile in sorted(fileList):
+        theStatus = "   None"
+        isKnown = chkFile in hashData and os.path.isfile(chkFile)
+        doHash = doCompare or (args.maintain and not isKnown)
+
+        newHash = "x"*32
+
+        if doHash:
+            sysP = subprocess.Popen(
+                ["md5sum \"%s\"" % chkFile],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                shell=True
+            )
+            stdOut, _ = sysP.communicate()
+            newHash = stdOut.decode("utf-8")[:32].rstrip("\n")
+
         if isKnown:
-            theStatus = "   Skipped"
-            saveHash  = prevHash
+            hashData[chkFile][1] = True
+            oldHash = hashData[chkFile][0]
+
+            theStatus = "   Found"
+            saveHash = oldHash
+
+            if doCompare:
+                if newHash == oldHash:
+                    theStatus = "   Passed"
+                    saveHash = oldHash
+                else:
+                    if doWrite:
+                        theStatus = "***Fail+Up"
+                        saveHash = newHash
+                    else:
+                        theStatus = "***Failed"
+                        saveHash = oldHash
+                    failList.append((chkFile, oldHash, newHash))
+
         else:
             theStatus = "   NewFile"
-            saveHash  = newHash
+            saveHash = newHash
             newList.append((chkFile, newHash))
 
-    if doCheck:
-        if isKnown:
-            if newHash == prevHash:
-                theStatus = "   Passed"
-                saveHash  = prevHash
-            else:
-                theStatus = "***Failed"
-                if doUpdate:
-                    saveHash = newHash
-                else:
-                    saveHash = prevHash
-                failList.append((chkFile, prevHash, newHash))
-        else:
-            theStatus = "   Skipped"
-            saveHash  = prevHash
+        nCount += 1
+        progress = 100*nCount/nFiles
+        fileSize = formatFileSize(os.path.getsize(chkFile))
+        print(f"[{progress:6.2f}%] {theStatus:<10s}  {saveHash}  {fileSize:8s}  {chkFile}")
+        if doWrite:
+            outFile.write(f"{saveHash}  {chkFile}\n")
+            outFile.flush()
 
-    nCount += 1
-    print("[%6.2f%%] %-10s  %s  %s" % (100*nCount/nFiles, theStatus, saveHash, chkFile))
-    if doMaintain or doUpdate:
-        outFile.write("%s  %s\n" % (saveHash, chkFile))
-        outFile.flush()
-
-print("")
-
-if doMaintain or doUpdate:
-    outFile.close()
-
-missList = []
-for hFile in hashData:
-    if not hashData[hFile][1]:
-        missList.append(hFile)
-
-nFail = len(failList)
-if nFail > 0:
-    print("")
-    print("%d Failed Checks (%6.2f%%)" % (nFail, 100*nFail/nFiles))
-    print("")
-    for chkFile, prevHash, newHash in failList:
-        print("%-32s != %-32s  %s" % (newHash, prevHash, chkFile))
     print("")
 
-nNew = len(newList)
-if nNew > 0:
-    print("")
-    print("%d New Files (%6.2f%%)" % (nNew, 100*nNew/nFiles))
-    print("")
-    for chkFile, newHash in newList:
-        print("%-32s  %s" % (newHash, chkFile))
-    print("")
+    if doWrite:
+        outFile.close()
 
-nMiss = len(missList)
-if nMiss > 0:
-    print("")
-    print("%d Missing Files (%6.2f%%)" % (nMiss, 100*nMiss/nFiles))
-    print("")
-    for chkFile in missList:
-        print("%s" % chkFile)
-    print("")
+    # Generate Reports
+    # ================
+
+    missList = []
+    for hFile in hashData:
+        if not hashData[hFile][1]:
+            missList.append(hFile)
+
+    nFail = len(failList)
+    if nFail > 0:
+        print("")
+        print(f"{nFail} Failed Checks ({100*nFail/nFiles:6.2f}%)")
+        print("")
+        for chkFile, prevHash, newHash in failList:
+            print(f"{newHash:32s} != {prevHash:32s}  {chkFile}")
+        print("")
+
+    nNew = len(newList)
+    if nNew > 0:
+        print("")
+        print(f"{nNew} New Files ({100*nNew/nFiles:6.2f}%)")
+        print("")
+        for chkFile, newHash in newList:
+            print(f"{newHash:32s}  {chkFile}")
+        print("")
+
+    nMiss = len(missList)
+    if nMiss > 0:
+        print("")
+        print(f"{nMiss} Missing Files ({100*nMiss/nFiles:6.2f}%)")
+        print("")
+        for chkFile in missList:
+            print(chkFile)
+        print("")
+
+    return 0
+
+
+def main():
+    """Main entry point and argument parser.
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-l", "--list", action="store_true",
+        help="Scan folder and list existing record, but don't write"
+    )
+    parser.add_argument(
+        "-m", "--maintain", action="store_true",
+        help="Hash new files and remove deleted files"
+    )
+    parser.add_argument(
+        "-c", "--check", action="store_true",
+        help="Check the hash of existing files"
+    )
+    parser.add_argument(
+        "-u", "--update", action="store_true",
+        help="Update the hash of existing files if they don't pass"
+    )
+    parser.add_argument(
+        "-d", "--md5dir", type=str, default="Hash",
+        help="The folder to read/write the hash failes from/to (default = Hash)"
+    )
+    parser.add_argument("path", type=str, help="The folder to check")
+
+    return hashDir(parser.parse_args())
+
+
+if __name__ == "__main__":
+    sys.exit(main())
