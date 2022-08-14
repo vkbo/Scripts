@@ -15,13 +15,14 @@ def signalHandler(signal, frame):
     sys.exit(0)
 
 
-def formatFileSize(value):
+def getFileSize(fileName):
     """Formats a file size with kB, MB, GB, etc.
     """
-    if not isinstance(value, int):
-        return "ERR"
+    try:
+        theVal = float(os.path.getsize(fileName))
+    except Exception:
+        theVal = 0
 
-    theVal = float(value)
     for pF in ["k", "M", "G", "T", "P", "E"]:
         theVal /= 1000.0
         if theVal < 1000.0:
@@ -32,7 +33,7 @@ def formatFileSize(value):
             else:
                 return f"{theVal:5.1f} {pF}B"
 
-    return str(value)
+    return str(theVal)
 
 
 def hashDir(args):
@@ -110,12 +111,11 @@ def hashDir(args):
 
     for chkFile in sorted(fileList):
         theStatus = "   None"
-        isKnown = chkFile in hashData and os.path.isfile(chkFile)
+        isGone = not os.path.isfile(chkFile)
+        isKnown = chkFile in hashData and not isGone
         doHash = doCompare or (args.maintain and not isKnown)
 
-        newHash = "x"*32
-
-        if doHash:
+        if doHash and not isGone:
             sysP = subprocess.Popen(
                 ["md5sum \"%s\"" % chkFile],
                 stdout=subprocess.PIPE,
@@ -146,13 +146,17 @@ def hashDir(args):
                     failList.append((chkFile, oldHash, newHash))
 
         else:
-            theStatus = "   NewFile"
-            saveHash = newHash
-            newList.append((chkFile, newHash))
+            if isGone:
+                theStatus = "   Missing"
+                saveHash = " "*32
+            else:
+                theStatus = "   NewFile"
+                newList.append((chkFile, newHash))
+                saveHash = newHash
 
         nCount += 1
         progress = 100*nCount/nFiles
-        fileSize = formatFileSize(os.path.getsize(chkFile))
+        fileSize = getFileSize(chkFile)
         print(f"[{progress:6.2f}%] {theStatus:<10s}  {saveHash}  {fileSize:8s}  {chkFile}")
         if doWrite:
             outFile.write(f"{saveHash}  {chkFile}\n")
