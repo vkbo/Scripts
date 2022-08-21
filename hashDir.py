@@ -116,8 +116,9 @@ def hashDir(args):
         doHash = doCompare or (args.maintain and not isKnown)
 
         if doHash and not isGone:
+            cmdFile = chkFile.replace('"', r'\"').replace("$", r"\$")
             sysP = subprocess.Popen(
-                ["md5sum \"%s\"" % chkFile],
+                [f'md5sum "{cmdFile}"'],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 shell=True
