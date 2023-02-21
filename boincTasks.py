@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
+# Simple script to monitor boinc jobs running locally
 
 import subprocess
+
 
 def formatTime(tS):
     tM, tS = divmod(tS, 60)
     tH, tM = divmod(tM, 60)
     return "%02d:%02d:%02d" % (tH, tM, tS)
+
 
 # Linux Terminal Colours
 # No idea if these work on windows
@@ -31,22 +34,26 @@ bTasks = {}
 tNum   = "None"
 for stdLine in str(stdOut).split("\\n"):
     stdLine = stdLine.strip()
-    if len(stdLine) < 12: continue
+    if len(stdLine) < 12:
+        continue
     if stdLine[-11:] == "-----------":
         tSplit = stdLine.split(")")
-        if not len(tSplit) == 2: continue
+        if not len(tSplit) == 2:
+            continue
         tNum = tSplit[0]
         bTasks[tNum] = {
-            "Name"      : "None",
-            "State"     : "None",
-            "Elapsed"   : 0.0,
-            "Remaining" : 0.0,
-            "Progress"  : 0.0,
+            "Name": "None",
+            "State": "None",
+            "Elapsed": 0.0,
+            "Remaining": 0.0,
+            "Progress": 0.0,
         }
     else:
         tSplit = stdLine.split(":")
-        if not len(tSplit) == 2: continue
-        if not tNum in bTasks.keys(): continue
+        if not len(tSplit) == 2:
+            continue
+        if tNum not in bTasks.keys():
+            continue
         if tSplit[0] == "name":
             bTasks[tNum]["Name"] = tSplit[1].strip()
         elif tSplit[0] == "active_task_state":
@@ -68,14 +75,17 @@ for tNum in bTasks.keys():
 
 print(BOLD+" BOINC Status"+END)
 
-listOrder = ["EXECUTING","SUSPENDED","WAITING","UNINITIALIZED"]
+listOrder = ["EXECUTING", "SUSPENDED", "WAITING", "UNINITIALIZED"]
 prevState = None
 for tState in listOrder:
     for tName in sorted(bSortTasks.keys()):
-        if not bSortTasks[tName]["State"] == tState: continue
+        if not bSortTasks[tName]["State"] == tState:
+            continue
         if not prevState == bSortTasks[tName]["State"]:
             print()
-            print((BOLD+" {:90.90}  Elapsed   Remain    Progress"+END).format(bSortTasks[tName]["State"]))
+            print((BOLD+" {:90.90}  Elapsed   Remain    Progress"+END).format(
+                bSortTasks[tName]["State"]
+            ))
             prevState = bSortTasks[tName]["State"]
         if bSortTasks[tName]["Progress"] < 40:
             colProg = RED
@@ -89,4 +99,3 @@ for tState in listOrder:
             formatTime(bSortTasks[tName]["Remaining"]),
             bSortTasks[tName]["Progress"],
         ))
-

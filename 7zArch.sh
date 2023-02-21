@@ -1,4 +1,6 @@
 #!/bin/bash
+# A wrapper script to create a 7z archive from a folder.
+# Usage: 7zArch.sh <path> <archive>
 
 if [ ! -z "$1" ]; then
     SDIR=$1

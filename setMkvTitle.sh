@@ -1,6 +1,6 @@
 #!/bin/bash
-
 # Set meta data title to same as filename and preserve modified time
+
 for fn in *.mkv; do
     echo "Processing: $fn"
     dt=$(stat -c %y "$fn")

@@ -1,4 +1,5 @@
 #!/bin/bash
+# Convert a webm video file to a gif animation
 # Source: https://askubuntu.com/a/1350795
 
 ffmpeg -y -i "$1" -vf palettegen _tmp_palette.png
