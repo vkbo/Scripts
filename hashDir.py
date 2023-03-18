@@ -1,5 +1,47 @@
 #!/usr/bin/env python3
 """Simple tool to hash and verify files in a tree.
+
+This script can be used to regularly check the integrity of a directory
+structure. The tools has a set of switches that allow you to choose whether to
+list, check, maintain or update the content of a folder, recursively.
+
+The tool will detect changes to file data, deleted files, newly added files,
+file renames and duplicate files. It does this by using the standard MD5
+hashing algorithms. The decision to use MD5 is primarily for speed since this is
+not a security tool. The MD5 algorithm is not safe for other uses.
+
+The tool creates a folder in the current working directory names "Hash". (The
+folder can be changed by specifying `--md5dir`.) It also keeps a backup of
+previous hash files when it is in writing mode, so it never overwrites the
+latest hash file.
+
+The hash file itself is a valid .md5 hash file and can be used with the
+standard `md5sum -c <hashfile.md5>` command.
+
+Usage Example:
+
+Scan all files in your Documents folder, and check their hash against previous
+values.
+
+```bash
+ch ~
+python hashDir.py --update Documents
+```
+
+Scan all files in your Documents folder, but don't check already known files.
+
+```bash
+ch ~
+python hashDir.py --maintain Documents
+```
+
+Check the integrity of all files in the folder against previous hash file.
+
+```bash
+ch ~
+python hashDir.py --check Documents
+```
+
 """
 
 import os
