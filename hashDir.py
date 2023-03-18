@@ -9,6 +9,8 @@ import argparse
 import datetime
 import subprocess
 
+__version__ = "2023.03.18"
+
 
 def signalHandler(signal, frame):
     print("\nExiting ...")
@@ -37,6 +39,8 @@ def getFileSize(fileName):
 
 
 def hashDir(args):
+    """The core hashing function.
+    """
 
     print("Hashing Folder")
     print("==============")
@@ -60,6 +64,8 @@ def hashDir(args):
     print("")
 
     hashData = {}
+    hashMap = {}
+    duplicateFiles = []
     print("Scanning for previous hash file ... ", end="")
     if os.path.isfile(hashFile):
         with open(hashFile, mode="r") as inFile:
@@ -68,6 +74,9 @@ def hashDir(args):
                     theHash = hashLine[:32]
                     theFile = hashLine[34:].rstrip("\n")
                     hashData[theFile] = [theHash, False]
+                    if theHash in hashMap:
+                        duplicateFiles.append((theFile, hashMap[theHash]))
+                    hashMap[theHash] = theFile
             print(f"found {len(hashData)} records")
     else:
         print("not found")
@@ -83,8 +92,9 @@ def hashDir(args):
 
     nFiles = len(fileList)
     nCount = 0
-    failList = []
     newList = []
+    failList = []
+    renameList = []
 
     doList = args.update or args.maintain or args.maintain or args.list
     doScan = (args.update or args.maintain or args.maintain) and not args.list
@@ -96,7 +106,7 @@ def hashDir(args):
     print(" - Add new files (maintain): %s" % ("Yes" if doScan else "No"))
     print(" - Remove deleted files (maintain): %s" % ("Yes" if doScan else "No"))
     print(" - Check existing records (check): %s" % ("Yes" if doCompare else "No"))
-    print(" - Update existing records (update): %s" % ("Yes" if doWrite else "No"))
+    print(" - Write changes (update/maintain): %s" % ("Yes" if doWrite else "No"))
     print("")
 
     if doWrite:
@@ -115,6 +125,9 @@ def hashDir(args):
         isKnown = chkFile in hashData and not isGone
         doHash = doCompare or (args.maintain and not isKnown)
 
+        isRename = False
+        newHash = ""
+
         if doHash and not isGone:
             cmdFile = chkFile.replace('"', r'\"').replace("$", r"\$")
             sysP = subprocess.Popen(
@@ -125,6 +138,7 @@ def hashDir(args):
             )
             stdOut, _ = sysP.communicate()
             newHash = stdOut.decode("utf-8")[:32].rstrip("\n")
+            isRename = newHash in hashMap
 
         if isKnown:
             hashData[chkFile][1] = True
@@ -145,6 +159,13 @@ def hashDir(args):
                         theStatus = "***Failed"
                         saveHash = oldHash
                     failList.append((chkFile, oldHash, newHash))
+
+        elif isRename:
+            oldFile = hashMap[newHash]
+            hashData[oldFile][1] = True
+            theStatus = "***Rename"
+            saveHash = newHash
+            renameList.append((chkFile, oldFile, newHash))
 
         else:
             if isGone:
@@ -171,15 +192,43 @@ def hashDir(args):
     # Generate Reports
     # ================
 
+    def plural(count):
+        return "s" if count > 1 else ""
+
+    # Pre-Compute
     missList = []
     for hFile in hashData:
         if not hashData[hFile][1]:
-            missList.append(hFile)
+            missList.append((hashData[hFile][0], hFile))
+
+    duplList = []
+    for fileOne, fileTwo in duplicateFiles:
+        if hashData[fileOne][1] and hashData[fileTwo][1]:
+            duplList.append((hashData[fileTwo][0], fileOne, fileTwo))
+
+    # Reports
+    nDupl = len(duplList)
+    if nDupl > 0:
+        print("")
+        print(f"{nDupl} Duplicate File{plural(nDupl)} ({100*nDupl/nFiles:.2f}%)")
+        print("")
+        for fileHash, fileOne, fileTwo in duplList:
+            print(f"{fileHash:32s}  {fileOne} == {fileTwo}")
+        print("")
+
+    nRename = len(renameList)
+    if nRename > 0:
+        print("")
+        print(f"{nRename} Renamed File{plural(nRename)} ({100*nRename/nFiles:.2f}%)")
+        print("")
+        for chkFile, oldFile, newHash in renameList:
+            print(f"{newHash:32s}  {oldFile} -> {chkFile}")
+        print("")
 
     nFail = len(failList)
     if nFail > 0:
         print("")
-        print(f"{nFail} Failed Checks ({100*nFail/nFiles:6.2f}%)")
+        print(f"{nFail} Failed Check{plural(nFail)} ({100*nFail/nFiles:.2f}%)")
         print("")
         for chkFile, prevHash, newHash in failList:
             print(f"{newHash:32s} != {prevHash:32s}  {chkFile}")
@@ -188,7 +237,7 @@ def hashDir(args):
     nNew = len(newList)
     if nNew > 0:
         print("")
-        print(f"{nNew} New Files ({100*nNew/nFiles:6.2f}%)")
+        print(f"{nNew} New File{plural(nNew)} ({100*nNew/nFiles:.2f}%)")
         print("")
         for chkFile, newHash in newList:
             print(f"{newHash:32s}  {chkFile}")
@@ -197,10 +246,10 @@ def hashDir(args):
     nMiss = len(missList)
     if nMiss > 0:
         print("")
-        print(f"{nMiss} Missing Files ({100*nMiss/nFiles:6.2f}%)")
+        print(f"{nMiss} Missing File{plural(nMiss)} ({100*nMiss/nFiles:.2f}%)")
         print("")
-        for chkFile in missList:
-            print(chkFile)
+        for oldHash, chkFile in missList:
+            print(f"{oldHash:32s}  {chkFile}")
         print("")
 
     return 0
