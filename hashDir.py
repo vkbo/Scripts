@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Simple tool to hash and verify files in a tree.
+"""Simple tool to hash and verify files in a directory tree.
 
 This script can be used to regularly check the integrity of a directory
 structure. The tools has a set of switches that allow you to choose whether to
@@ -205,7 +205,7 @@ def hashDir(args):
         elif isRename:
             oldFile = hashMap[newHash]
             hashData[oldFile][1] = True
-            theStatus = "***Rename"
+            theStatus = "***Renamed"
             saveHash = newHash
             renameList.append((chkFile, oldFile, newHash))
 
