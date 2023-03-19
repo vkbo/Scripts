@@ -51,7 +51,7 @@ import argparse
 import datetime
 import subprocess
 
-__version__ = "2023.03.18"
+__version__ = "2023.03.19"
 
 
 def signalHandler(signal, frame):
@@ -195,7 +195,7 @@ def hashDir(args):
                     saveHash = oldHash
                 else:
                     if doWrite:
-                        theStatus = "***Updated"
+                        theStatus = "***Changed"
                         saveHash = newHash
                     else:
                         theStatus = "***Failed"
@@ -214,7 +214,7 @@ def hashDir(args):
                 theStatus = "***Gone"
                 saveHash = "-"*32
             else:
-                theStatus = "   NewFile"
+                theStatus = "   New"
                 newList.append((chkFile, newHash))
                 saveHash = newHash
 
