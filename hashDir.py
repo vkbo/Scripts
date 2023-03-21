@@ -83,7 +83,6 @@ def getFileSize(fileName):
 def hashDir(args):
     """The core hashing function.
     """
-
     print("Hashing Folder")
     print("==============")
 
@@ -101,14 +100,26 @@ def hashDir(args):
     if not os.path.isdir(backDir):
         os.mkdir(backDir)
 
-    print(f"Scan Path: {scanDir}")
-    print(f"Hash File: {hashFile}")
-    print("")
+    if args.tee:
+        logStream = open(f"{scanDir}.log", mode="w")
+
+        def tPrint(text, end="\n"):
+            logStream.write(f"{text}{end}")
+            logStream.flush()
+            print(text, end=end)
+
+    else:
+        def tPrint(text, end=None):
+            print(text, end=end)
+
+    tPrint(f"Scan Path: {scanDir}")
+    tPrint(f"Hash File: {hashFile}")
+    tPrint("")
 
     hashData = {}
     hashMap = {}
     duplicateFiles = []
-    print("Scanning for previous hash file ... ", end="")
+    tPrint("Scanning for previous hash file ... ", end="")
     if os.path.isfile(hashFile):
         with open(hashFile, mode="r") as inFile:
             for hashLine in inFile:
@@ -119,18 +130,18 @@ def hashDir(args):
                     if theHash in hashMap:
                         duplicateFiles.append((theFile, hashMap[theHash]))
                     hashMap[theHash] = theFile
-            print(f"found {len(hashData)} records")
+            tPrint(f"found {len(hashData)} records")
     else:
-        print("not found")
+        tPrint("not found")
 
     fileList = []
-    print("Scanning for files ... ", end="")
+    tPrint("Scanning for files ... ", end="")
     for tRoot, _, tFiles in os.walk(scanDir):
         if len(tFiles) > 0:
             for tFile in tFiles:
                 fileList.append(os.path.join(tRoot, tFile))
-    print(f"found {len(fileList)} files")
-    print("")
+    tPrint(f"found {len(fileList)} files")
+    tPrint("")
 
     nFiles = len(fileList)
     nCount = 0
@@ -143,13 +154,13 @@ def hashDir(args):
     doWrite = (args.update or args.maintain) and not args.list
     doCompare = args.check or args.update
 
-    print("Run Mode:")
-    print(" - Check file existence (list): %s" % ("Yes" if doList else "No"))
-    print(" - Add new files (maintain): %s" % ("Yes" if doScan else "No"))
-    print(" - Remove deleted files (maintain): %s" % ("Yes" if doScan else "No"))
-    print(" - Check existing records (check): %s" % ("Yes" if doCompare else "No"))
-    print(" - Write changes (update/maintain): %s" % ("Yes" if doWrite else "No"))
-    print("")
+    tPrint("Run Mode:")
+    tPrint(" - Check file existence (list): %s" % ("Yes" if doList else "No"))
+    tPrint(" - Add new files (maintain): %s" % ("Yes" if doScan else "No"))
+    tPrint(" - Remove deleted files (maintain): %s" % ("Yes" if doScan else "No"))
+    tPrint(" - Check existing records (check): %s" % ("Yes" if doCompare else "No"))
+    tPrint(" - Write changes (update/maintain): %s" % ("Yes" if doWrite else "No"))
+    tPrint("")
 
     if doWrite:
         if os.path.isfile(hashFile):
@@ -157,8 +168,8 @@ def hashDir(args):
             timeStamp = datetime.datetime.fromtimestamp(modTime).strftime("%Y%m%d-%H%M%S")
             backFile = os.path.join(backDir, baseDir+"-"+timeStamp+".md5")
             os.rename(hashFile, backFile)
-            print(f"Copied: {hashFile} -> {backFile}")
-            print("")
+            tPrint(f"Copied: {hashFile} -> {backFile}")
+            tPrint("")
         outFile = open(hashFile, mode="w+")
 
     for chkFile in sorted(fileList):
@@ -221,12 +232,12 @@ def hashDir(args):
         nCount += 1
         progress = 100*nCount/nFiles
         fileSize = getFileSize(chkFile)
-        print(f"[{progress:6.2f}%] {theStatus:<10s}  {saveHash}  {fileSize:8s}  {chkFile}")
+        tPrint(f"[{progress:6.2f}%] {theStatus:<10s}  {saveHash}  {fileSize:8s}  {chkFile}")
         if doWrite:
             outFile.write(f"{saveHash}  {chkFile}\n")
             outFile.flush()
 
-    print("")
+    tPrint("")
 
     if doWrite:
         outFile.close()
@@ -251,48 +262,51 @@ def hashDir(args):
     # Reports
     nDupl = len(duplList)
     if nDupl > 0:
-        print("")
-        print(f"{nDupl} Duplicate File{plural(nDupl)} ({100*nDupl/nFiles:.2f}%)")
-        print("")
+        tPrint("")
+        tPrint(f"{nDupl} Duplicate File{plural(nDupl)} ({100*nDupl/nFiles:.2f}%)")
+        tPrint("")
         for fileHash, fileOne, fileTwo in duplList:
-            print(f"{fileHash:32s}  {fileOne} == {fileTwo}")
-        print("")
+            tPrint(f"{fileHash:32s}  {fileOne} == {fileTwo}")
+        tPrint("")
 
     nRename = len(renameList)
     if nRename > 0:
-        print("")
-        print(f"{nRename} Renamed File{plural(nRename)} ({100*nRename/nFiles:.2f}%)")
-        print("")
+        tPrint("")
+        tPrint(f"{nRename} Renamed File{plural(nRename)} ({100*nRename/nFiles:.2f}%)")
+        tPrint("")
         for chkFile, oldFile, newHash in renameList:
-            print(f"{newHash:32s}  {oldFile} -> {chkFile}")
-        print("")
+            tPrint(f"{newHash:32s}  {oldFile} -> {chkFile}")
+        tPrint("")
 
     nFail = len(failList)
     if nFail > 0:
-        print("")
-        print(f"{nFail} Failed Check{plural(nFail)} ({100*nFail/nFiles:.2f}%)")
-        print("")
+        tPrint("")
+        tPrint(f"{nFail} Failed Check{plural(nFail)} ({100*nFail/nFiles:.2f}%)")
+        tPrint("")
         for chkFile, prevHash, newHash in failList:
-            print(f"{newHash:32s} != {prevHash:32s}  {chkFile}")
-        print("")
+            tPrint(f"{newHash:32s} != {prevHash:32s}  {chkFile}")
+        tPrint("")
 
     nNew = len(newList)
     if nNew > 0:
-        print("")
-        print(f"{nNew} New File{plural(nNew)} ({100*nNew/nFiles:.2f}%)")
-        print("")
+        tPrint("")
+        tPrint(f"{nNew} New File{plural(nNew)} ({100*nNew/nFiles:.2f}%)")
+        tPrint("")
         for chkFile, newHash in newList:
-            print(f"{newHash:32s}  {chkFile}")
-        print("")
+            tPrint(f"{newHash:32s}  {chkFile}")
+        tPrint("")
 
     nMiss = len(missList)
     if nMiss > 0:
-        print("")
-        print(f"{nMiss} Missing File{plural(nMiss)} ({100*nMiss/nFiles:.2f}%)")
-        print("")
+        tPrint("")
+        tPrint(f"{nMiss} Missing File{plural(nMiss)} ({100*nMiss/nFiles:.2f}%)")
+        tPrint("")
         for oldHash, chkFile in missList:
-            print(f"{oldHash:32s}  {chkFile}")
-        print("")
+            tPrint(f"{oldHash:32s}  {chkFile}")
+        tPrint("")
+
+    if args.tee:
+        logStream.close()
 
     return 0
 
@@ -319,7 +333,11 @@ def main():
     )
     parser.add_argument(
         "-d", "--md5dir", type=str, default="Hash",
-        help="The folder to read/write the hash failes from/to (default = Hash)"
+        help="The folder to read/write the hash fails from/to (default = Hash)"
+    )
+    parser.add_argument(
+        "-t", "--tee", action="store_true",
+        help="Write a log file of the output"
     )
     parser.add_argument("path", type=str, help="The folder to check")
 
