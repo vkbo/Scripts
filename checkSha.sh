@@ -1,4 +1,4 @@
-#¬/bin/bash
+#!/bin/bash
 # Check a shasum directly from command line
 # Usage: checkSha.sh <path> <shasum>
 
