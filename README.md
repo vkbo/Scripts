@@ -75,7 +75,7 @@ A simple Python script that monitors the network connection, and shut down the h
 has been down for a certain amount of time.
 
 This is a simple way to shut down in case of power loss when the machine itself is on a simple UPS,
-and the network is not. I.e. if the netfork is down, the power is likely out.
+and the network is not. I.e. if the network is down, the power is likely out.
 
 ### checkSha
 
@@ -90,7 +90,7 @@ somewhere.
 
 A Simple script that will calculate the network config for a given IP/mask. I made the script to
 calculate the firewall settings to block IP ranges trying to brute force login on an 
-nternet-facing PC I used to work on. I got *a lot* of brute force attempts on that PC.
+internet-facing PC I used to work on. I got *a lot* of brute force attempts on that PC.
 
 ### webm2gif
 
