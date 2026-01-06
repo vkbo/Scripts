@@ -24,21 +24,18 @@ Scan all files in your Documents folder, and check their hash against previous
 values.
 
 ```bash
-ch ~
 python hashDir.py --update Documents
 ```
 
 Scan all files in your Documents folder, but don't check already known files.
 
 ```bash
-ch ~
 python hashDir.py --maintain Documents
 ```
 
 Check the integrity of all files in the folder against previous hash file.
 
 ```bash
-ch ~
 python hashDir.py --check Documents
 ```
 
@@ -60,8 +57,7 @@ def signalHandler(signal, frame):
 
 
 def getFileSize(fileName):
-    """Formats a file size with kB, MB, GB, etc.
-    """
+    """Formats a file size with kB, MB, GB, etc."""
     try:
         theVal = float(os.path.getsize(fileName))
     except Exception:
@@ -81,8 +77,7 @@ def getFileSize(fileName):
 
 
 def hashDir(args):
-    """The core hashing function.
-    """
+    """The core hashing function."""
     print("Hashing Folder")
     print("==============")
 
@@ -312,8 +307,7 @@ def hashDir(args):
 
 
 def main():
-    """Main entry point and argument parser.
-    """
+    """Main entry point and argument parser."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-l", "--list", action="store_true",
